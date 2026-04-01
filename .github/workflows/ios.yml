@@ -10,7 +10,8 @@ jobs:
   build:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -21,25 +22,29 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Prepare iOS Project
+      - name: Create iOS project and install pods
         run: |
           flutter create . --platforms=ios --project-name=manga_ai
           cd ios
           pod install
           cd ..
 
-      - name: Build Unsigned IPA
+      - name: Build Unsigned iOS App
         run: |
+          # Sertifikatsiz build qilish
           flutter build ios --release --no-codesign
-          mkdir -p build/ios/ipa
-          cd build/ios/iphoneos
-          mkdir Payload
-          cp -r Runner.app Payload/
-          zip -r ../ipa/MangaAI.ipa Payload
+          
+          # IPA faylini qo'lda yaratish (Esign uchun)
+          mkdir -p build/ios/ipa/Payload
+          cp -r build/ios/iphoneos/Runner.app build/ios/ipa/Payload/
+          cd build/ios/ipa
+          zip -r MangaAI.ipa Payload
           cd ../../..
 
-      - name: Upload Artifact
+      - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
         with:
           name: MangaAI-IPA
-          path: build/ios/ipa/*.ipa
+          path: build/ios/ipa/MangaAI.ipa
+          if-no-files-found: error
+          retention-days: 5
